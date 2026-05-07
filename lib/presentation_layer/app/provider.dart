@@ -20,30 +20,15 @@ class AppProvider extends ChangeNotifier {
   }
 
   final Repository _repository = RepositoryImpl();
-  final TextEditingController incomeTitleController = TextEditingController();
-  final TextEditingController incomeAmountController = TextEditingController();
-  final TextEditingController expenseTitleController = TextEditingController();
-  final TextEditingController expenseAmountController = TextEditingController();
-  final TextEditingController categoryEmojiController = TextEditingController();
-  final TextEditingController categoryNameController = TextEditingController();
-
   StreamSubscription<dynamic>? _categorySubscription;
   StreamSubscription<dynamic>? _transactionSubscription;
   List<ExpenseCategory> _categories = [];
   List<ExpenseTransaction> _transactions = [];
   int _selectedTabIndex = 0;
   int _selectedWeekIndex = 3;
-  DateTime _selectedIncomeDate = DateTime(2022, 4, 23);
-  DateTime _selectedExpenseDate = DateTime(2022, 4, 23);
-  String _selectedIncomeCategoryId = 'salary';
-  String _selectedExpenseCategoryId = 'food';
 
   int get selectedTabIndex => _selectedTabIndex;
   int get selectedWeekIndex => _selectedWeekIndex;
-  DateTime get selectedIncomeDate => _selectedIncomeDate;
-  DateTime get selectedExpenseDate => _selectedExpenseDate;
-  String get selectedIncomeCategoryId => _selectedIncomeCategoryId;
-  String get selectedExpenseCategoryId => _selectedExpenseCategoryId;
   List<ExpenseCategory> get categories => List.unmodifiable(_categories);
 
   List<ExpenseTransaction> get transactions {
@@ -54,20 +39,6 @@ class AppProvider extends ChangeNotifier {
 
   List<ExpenseTransaction> get recentTransactions {
     return transactions.take(6).toList();
-  }
-
-  List<ExpenseTransaction> get incomeTransactionsForSelectedDate {
-    return _transactionsForDateAndTone(
-      dateTime: _selectedIncomeDate,
-      tone: TransactionTone.income,
-    );
-  }
-
-  List<ExpenseTransaction> get expenseTransactionsForSelectedDate {
-    return _transactionsForDateAndTone(
-      dateTime: _selectedExpenseDate,
-      tone: TransactionTone.expense,
-    );
   }
 
   BalanceSummary get balanceSummary {
@@ -164,110 +135,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectIncomeCategory(String categoryId) {
-    _selectedIncomeCategoryId = categoryId;
-    notifyListeners();
-  }
-
-  void selectExpenseCategory(String categoryId) {
-    _selectedExpenseCategoryId = categoryId;
-    notifyListeners();
-  }
-
-  void selectIncomeDate(DateTime dateTime) {
-    _selectedIncomeDate = dateTime;
-    notifyListeners();
-  }
-
-  void selectExpenseDate(DateTime dateTime) {
-    _selectedExpenseDate = dateTime;
-    notifyListeners();
-  }
-
-  void addCategory(TransactionTone tone) {
-    final emoji = categoryEmojiController.text.trim();
-    final name = categoryNameController.text.trim();
-    if (emoji.isEmpty || name.isEmpty) {
-      return;
-    }
-
-    final category = ExpenseCategory(
-      id: 'category_${DateTime.now().microsecondsSinceEpoch}',
-      name: name,
-      emoji: emoji,
-      tone: tone,
-      colorKey: tone == TransactionTone.income ? 'green' : 'orange',
-    );
-    _categories.add(category);
-    unawaited(_repository.saveCategory(category));
-    if (tone == TransactionTone.income) {
-      _selectedIncomeCategoryId = category.id;
-    } else {
-      _selectedExpenseCategoryId = category.id;
-    }
-    categoryEmojiController.clear();
-    categoryNameController.clear();
-    notifyListeners();
-  }
-
-  void addIncomeTransaction() {
-    _addTransaction(
-      titleController: incomeTitleController,
-      amountController: incomeAmountController,
-      selectedDate: _selectedIncomeDate,
-      selectedCategoryId: _selectedIncomeCategoryId,
-      tone: TransactionTone.income,
-    );
-  }
-
-  void addExpenseTransaction() {
-    _addTransaction(
-      titleController: expenseTitleController,
-      amountController: expenseAmountController,
-      selectedDate: _selectedExpenseDate,
-      selectedCategoryId: _selectedExpenseCategoryId,
-      tone: TransactionTone.expense,
-    );
-  }
-
-  void _addTransaction({
-    required TextEditingController titleController,
-    required TextEditingController amountController,
-    required DateTime selectedDate,
-    required String selectedCategoryId,
-    required TransactionTone tone,
-  }) {
-    final category = categoryById(selectedCategoryId);
-    final title = titleController.text.trim().isEmpty
-        ? category.name
-        : titleController.text.trim();
-    final amount = double.tryParse(amountController.text.trim());
-    if (amount == null || amount <= 0) {
-      return;
-    }
-
-    final now = DateTime.now();
-    final transaction = ExpenseTransaction(
-      id: 'tx_${now.microsecondsSinceEpoch}',
-      title: title,
-      amount: amount,
-      dateTime: DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-        now.hour,
-        now.minute,
-      ),
-      categoryId: selectedCategoryId,
-      tone: tone,
-    );
-    _transactions.add(transaction);
-    unawaited(_repository.saveTransaction(transaction));
-    titleController.clear();
-    amountController.clear();
-    notifyListeners();
-  }
-
   Future<void> _seedHiveIfNeeded() async {
     if (_repository.getAllCategories().isEmpty) {
       await _repository.saveCategories(ExpenseMockData.categories);
@@ -282,7 +149,6 @@ class AppProvider extends ChangeNotifier {
   void _listenToHiveChanges() {
     _categorySubscription = _repository.getAllCategoryEventStream().listen((_) {
       _categories = _repository.getAllCategories();
-      _ensureSelectedCategories();
       notifyListeners();
     });
     _transactionSubscription = _repository
@@ -296,29 +162,6 @@ class AppProvider extends ChangeNotifier {
   void _loadFromHive() {
     _categories = _repository.getAllCategories();
     _transactions = _repository.getAllTransactions();
-    _ensureSelectedCategories();
-  }
-
-  void _ensureSelectedCategories() {
-    if (_categories.isEmpty) {
-      return;
-    }
-    if (!_categories.any(
-      (category) => category.id == _selectedIncomeCategoryId,
-    )) {
-      final incomeCategories = categoriesByTone(TransactionTone.income);
-      if (incomeCategories.isNotEmpty) {
-        _selectedIncomeCategoryId = incomeCategories.first.id;
-      }
-    }
-    if (!_categories.any(
-      (category) => category.id == _selectedExpenseCategoryId,
-    )) {
-      final expenseCategories = categoriesByTone(TransactionTone.expense);
-      if (expenseCategories.isNotEmpty) {
-        _selectedExpenseCategoryId = expenseCategories.first.id;
-      }
-    }
   }
 
   double _sumByTone(TransactionTone tone) {
@@ -334,33 +177,10 @@ class AppProvider extends ChangeNotifier {
         .fold<double>(0, (sum, transaction) => sum + transaction.amount);
   }
 
-  List<ExpenseTransaction> _transactionsForDateAndTone({
-    required DateTime dateTime,
-    required TransactionTone tone,
-  }) {
-    final filteredTransactions = _transactions.where((transaction) {
-      return transaction.tone == tone &&
-          _isSameDate(transaction.dateTime, dateTime);
-    }).toList()..sort((left, right) => right.dateTime.compareTo(left.dateTime));
-    return filteredTransactions;
-  }
-
-  bool _isSameDate(DateTime left, DateTime right) {
-    return left.year == right.year &&
-        left.month == right.month &&
-        left.day == right.day;
-  }
-
   @override
   void dispose() {
     unawaited(_categorySubscription?.cancel());
     unawaited(_transactionSubscription?.cancel());
-    incomeTitleController.dispose();
-    incomeAmountController.dispose();
-    expenseTitleController.dispose();
-    expenseAmountController.dispose();
-    categoryEmojiController.dispose();
-    categoryNameController.dispose();
     super.dispose();
   }
 }

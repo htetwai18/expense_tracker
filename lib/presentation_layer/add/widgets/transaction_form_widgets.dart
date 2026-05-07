@@ -29,6 +29,9 @@ class TransactionFormScaffold extends StatelessWidget {
     required this.onDateSelected,
     required this.onSubmitTap,
     required this.filteredTransactions,
+    required this.categoryEmojiController,
+    required this.categoryNameController,
+    required this.onAddCategory,
     super.key,
   });
 
@@ -47,6 +50,9 @@ class TransactionFormScaffold extends StatelessWidget {
   final ValueChanged<DateTime> onDateSelected;
   final VoidCallback onSubmitTap;
   final List<ExpenseTransaction> filteredTransactions;
+  final TextEditingController categoryEmojiController;
+  final TextEditingController categoryNameController;
+  final Future<void> Function() onAddCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +71,11 @@ class TransactionFormScaffold extends StatelessWidget {
     void onAddCategoryTap() {
       showDialog<void>(
         context: context,
-        builder: (context) => CategoryDialog(tone: tone),
+        builder: (context) => CategoryDialog(
+          emojiController: categoryEmojiController,
+          nameController: categoryNameController,
+          onSave: onAddCategory,
+        ),
       );
     }
 

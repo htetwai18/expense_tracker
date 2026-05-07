@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/colors.dart';
-import '../../../core/enums.dart';
 import '../../../core/measurements.dart';
 import '../../../core/reusables.dart';
 import '../../../core/string_collection.dart';
 import '../../../core/text_styles.dart';
-import '../../app/provider.dart';
 
 class CategoryDialog extends StatelessWidget {
-  const CategoryDialog({required this.tone, super.key});
+  const CategoryDialog({
+    required this.emojiController,
+    required this.nameController,
+    required this.onSave,
+    super.key,
+  });
 
-  final TransactionTone tone;
+  final TextEditingController emojiController;
+  final TextEditingController nameController;
+  final Future<void> Function() onSave;
 
   @override
   Widget build(BuildContext context) {
-    final appProvider = context.read<AppProvider>();
     void onCancelPressed() => Navigator.of(context).pop();
-    void onSavePressed() {
-      appProvider.addCategory(tone);
-      Navigator.of(context).pop();
+    Future<void> onSavePressed() async {
+      final navigator = Navigator.of(context);
+      await onSave();
+      navigator.pop();
     }
 
     return Dialog(
@@ -39,13 +43,13 @@ class CategoryDialog extends StatelessWidget {
             DialogTextField(
               label: AppStrings.categoryEmoji,
               hint: AppStrings.emojiHint,
-              controller: appProvider.categoryEmojiController,
+              controller: emojiController,
             ),
             const SizedBox(height: AppMeasurements.gap),
             DialogTextField(
               label: AppStrings.categoryName,
               hint: AppStrings.categoryNameHint,
-              controller: appProvider.categoryNameController,
+              controller: nameController,
             ),
             const SizedBox(height: AppMeasurements.largeGap),
             Row(
