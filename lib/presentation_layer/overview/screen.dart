@@ -26,9 +26,7 @@ class OverviewScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppHeader(
-                title: AppStrings.overview,
-              ),
+              const AppHeader(title: AppStrings.overview),
               const SizedBox(height: AppMeasurements.largeGap),
               Row(
                 children: [

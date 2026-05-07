@@ -67,6 +67,7 @@ abstract final class AppStrings {
   static const String save = 'Save';
   static const String transactionSaved = 'Transaction saved';
   static const String categorySaved = 'Category saved';
+  static const String titleRequired = 'Title is required';
   static const String amountRequired = 'Amount is required';
   static const String amountInvalid = 'Enter a valid amount';
   static const String amountMustBePositive = 'Amount must be greater than zero';

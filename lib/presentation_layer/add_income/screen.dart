@@ -52,6 +52,8 @@ class AddIncomeScreen extends StatelessWidget {
             categoryNameController: provider.categoryNameController,
             onAddCategory: provider.addCategory,
             isLoading: provider.isLoading,
+            categoryEmojiErrorTextGetter: () => provider.categoryEmojiErrorText,
+            categoryNameErrorTextGetter: () => provider.categoryNameErrorText,
             titleErrorText: provider.titleErrorText,
             amountErrorText: provider.amountErrorText,
             categoryErrorText: provider.categoryErrorText,

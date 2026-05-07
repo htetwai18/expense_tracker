@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/colors.dart';
 import '../../../core/enums.dart';
@@ -33,6 +34,8 @@ class TransactionFormScaffold extends StatelessWidget {
     required this.categoryNameController,
     required this.onAddCategory,
     required this.isLoading,
+    required this.categoryEmojiErrorTextGetter,
+    required this.categoryNameErrorTextGetter,
     this.titleErrorText,
     this.amountErrorText,
     this.categoryErrorText,
@@ -58,8 +61,10 @@ class TransactionFormScaffold extends StatelessWidget {
   final List<ExpenseTransaction> filteredTransactions;
   final TextEditingController categoryEmojiController;
   final TextEditingController categoryNameController;
-  final Future<void> Function() onAddCategory;
+  final Future<bool> Function() onAddCategory;
   final bool isLoading;
+  final String? Function() categoryEmojiErrorTextGetter;
+  final String? Function() categoryNameErrorTextGetter;
   final String? titleErrorText;
   final String? amountErrorText;
   final String? categoryErrorText;
@@ -87,8 +92,8 @@ class TransactionFormScaffold extends StatelessWidget {
           emojiController: categoryEmojiController,
           nameController: categoryNameController,
           onSave: onAddCategory,
-          emojiErrorText: categoryEmojiErrorText,
-          nameErrorText: categoryNameErrorText,
+          emojiErrorTextGetter: categoryEmojiErrorTextGetter,
+          nameErrorTextGetter: categoryNameErrorTextGetter,
         ),
       );
     }
@@ -131,7 +136,10 @@ class TransactionFormScaffold extends StatelessWidget {
               controller: amountController,
               leadingText: AppStrings.dollarSign,
               trailingText: AppStrings.amountStepper,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [DecimalAmountInputFormatter()],
               errorText: amountErrorText,
             ),
             const SizedBox(height: AppMeasurements.largeGap),
@@ -301,6 +309,7 @@ class LabeledInputBox extends StatelessWidget {
     this.leadingText,
     this.trailingText,
     this.keyboardType,
+    this.inputFormatters,
     this.errorText,
     super.key,
   });
@@ -311,6 +320,7 @@ class LabeledInputBox extends StatelessWidget {
   final String? leadingText;
   final String? trailingText;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
   final String? errorText;
 
   @override
@@ -341,6 +351,7 @@ class LabeledInputBox extends StatelessWidget {
                 child: TextField(
                   controller: controller,
                   keyboardType: keyboardType,
+                  inputFormatters: inputFormatters,
                   style: AppTextStyles.input,
                   decoration: InputDecoration(
                     hintText: hint,
@@ -373,6 +384,21 @@ class LabeledInputBox extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+class DecimalAmountInputFormatter extends TextInputFormatter {
+  final RegExp _validAmount = RegExp(r'^\d*\.?\d*$');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (_validAmount.hasMatch(newValue.text)) {
+      return newValue;
+    }
+    return oldValue;
   }
 }
 

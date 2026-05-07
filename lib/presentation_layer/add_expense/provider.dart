@@ -53,13 +53,13 @@ class AddExpenseProvider extends ChangeNotifier {
     _notifySafely();
   }
 
-  Future<void> addCategory() async {
+  Future<bool> addCategory() async {
     _clearCategoryErrors();
     final emoji = categoryEmojiController.text.trim();
     final name = categoryNameController.text.trim();
     if (!_validateCategoryInput(emoji: emoji, name: name)) {
       _notifySafely();
-      return;
+      return false;
     }
     final category = ExpenseCategory(
       id: 'category_${DateTime.now().microsecondsSinceEpoch}',
@@ -76,8 +76,10 @@ class AddExpenseProvider extends ChangeNotifier {
       categoryNameController.clear();
       _setMessage(AppStrings.categorySaved);
       _loadScreenData();
+      return true;
     } catch (_) {
       _setMessage(AppStrings.categorySaveFailed);
+      return false;
     } finally {
       _hideLoading();
     }
@@ -85,12 +87,10 @@ class AddExpenseProvider extends ChangeNotifier {
 
   Future<bool> saveExpenseTransaction() async {
     _clearTransactionErrors();
-    final category = categoryById(selectedCategoryId);
-    final title = titleController.text.trim().isEmpty
-        ? category.name
-        : titleController.text.trim();
-    final amount = double.tryParse(amountController.text.trim());
-    if (!_validateTransactionInput(amount: amount)) {
+    final title = titleController.text.trim();
+    final amountText = amountController.text.trim();
+    final amount = double.tryParse(amountText);
+    if (!_validateTransactionInput(title: title, amount: amount)) {
       _notifySafely();
       return false;
     }
@@ -203,37 +203,54 @@ class AddExpenseProvider extends ChangeNotifier {
     }
   }
 
-  bool _validateTransactionInput({required double? amount}) {
+  bool _validateTransactionInput({
+    required String title,
+    required double? amount,
+  }) {
+    var isValid = true;
+    String? firstMessage;
+    void setMessageOnce(String message) {
+      firstMessage ??= message;
+    }
+
+    if (title.isEmpty) {
+      titleErrorText = AppStrings.titleRequired;
+      setMessageOnce(AppStrings.titleRequired);
+      isValid = false;
+    }
+
     if (categories.isEmpty) {
       categoryErrorText = AppStrings.categoryRequired;
-      userMessage = AppStrings.categoryRequired;
-      return false;
-    }
-    if (!categories.any((category) => category.id == selectedCategoryId)) {
+      setMessageOnce(AppStrings.categoryRequired);
+      isValid = false;
+    } else if (!categories.any(
+      (category) => category.id == selectedCategoryId,
+    )) {
       _ensureSelectedCategory();
       if (!categories.any((category) => category.id == selectedCategoryId)) {
         categoryErrorText = AppStrings.categoryRequired;
-        userMessage = AppStrings.categoryRequired;
-        return false;
+        setMessageOnce(AppStrings.categoryRequired);
+        isValid = false;
       }
     }
     final amountText = amountController.text.trim();
     if (amountText.isEmpty) {
       amountErrorText = AppStrings.amountRequired;
-      userMessage = AppStrings.amountRequired;
-      return false;
-    }
-    if (amount == null) {
+      setMessageOnce(AppStrings.amountRequired);
+      isValid = false;
+    } else if (amount == null) {
       amountErrorText = AppStrings.amountInvalid;
-      userMessage = AppStrings.amountInvalid;
-      return false;
-    }
-    if (amount <= 0) {
+      setMessageOnce(AppStrings.amountInvalid);
+      isValid = false;
+    } else if (amount <= 0) {
       amountErrorText = AppStrings.amountMustBePositive;
-      userMessage = AppStrings.amountMustBePositive;
-      return false;
+      setMessageOnce(AppStrings.amountMustBePositive);
+      isValid = false;
     }
-    return true;
+    if (!isValid && firstMessage != null) {
+      userMessage = firstMessage;
+    }
+    return isValid;
   }
 
   bool _validateCategoryInput({required String emoji, required String name}) {

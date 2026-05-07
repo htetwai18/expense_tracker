@@ -6,29 +6,40 @@ import '../../../core/reusables.dart';
 import '../../../core/string_collection.dart';
 import '../../../core/text_styles.dart';
 
-class CategoryDialog extends StatelessWidget {
+class CategoryDialog extends StatefulWidget {
   const CategoryDialog({
     required this.emojiController,
     required this.nameController,
     required this.onSave,
-    this.emojiErrorText,
-    this.nameErrorText,
+    required this.emojiErrorTextGetter,
+    required this.nameErrorTextGetter,
     super.key,
   });
 
   final TextEditingController emojiController;
   final TextEditingController nameController;
-  final Future<void> Function() onSave;
-  final String? emojiErrorText;
-  final String? nameErrorText;
+  final Future<bool> Function() onSave;
+  final String? Function() emojiErrorTextGetter;
+  final String? Function() nameErrorTextGetter;
 
+  @override
+  State<CategoryDialog> createState() => _CategoryDialogState();
+}
+
+class _CategoryDialogState extends State<CategoryDialog> {
   @override
   Widget build(BuildContext context) {
     void onCancelPressed() => Navigator.of(context).pop();
     Future<void> onSavePressed() async {
       final navigator = Navigator.of(context);
-      await onSave();
-      navigator.pop();
+      final isSaved = await widget.onSave();
+      if (isSaved) {
+        navigator.pop();
+        return;
+      }
+      if (mounted) {
+        setState(() {});
+      }
     }
 
     return Dialog(
@@ -47,15 +58,15 @@ class CategoryDialog extends StatelessWidget {
             DialogTextField(
               label: AppStrings.categoryEmoji,
               hint: AppStrings.emojiHint,
-              controller: emojiController,
-              errorText: emojiErrorText,
+              controller: widget.emojiController,
+              errorText: widget.emojiErrorTextGetter(),
             ),
             const SizedBox(height: AppMeasurements.gap),
             DialogTextField(
               label: AppStrings.categoryName,
               hint: AppStrings.categoryNameHint,
-              controller: nameController,
-              errorText: nameErrorText,
+              controller: widget.nameController,
+              errorText: widget.nameErrorTextGetter(),
             ),
             const SizedBox(height: AppMeasurements.largeGap),
             Row(
