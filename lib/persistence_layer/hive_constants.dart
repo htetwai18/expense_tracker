@@ -1,0 +1,10 @@
+// ignore_for_file: constant_identifier_names
+
+/// Hive Types
+const int HIVE_TYPE_ID_EXPENSE_CATEGORY = 1;
+const int HIVE_TYPE_ID_EXPENSE_TRANSACTION = 2;
+const int HIVE_TYPE_ID_TRANSACTION_TONE = 3;
+
+/// Box Names
+const String BOX_NAME_EXPENSE_CATEGORY = 'BOX_NAME_EXPENSE_CATEGORY';
+const String BOX_NAME_EXPENSE_TRANSACTION = 'BOX_NAME_EXPENSE_TRANSACTION';
