@@ -21,6 +21,16 @@ class AddScreen extends StatelessWidget {
       create: (context) => AddProvider(),
       child: Consumer<AddProvider>(
         builder: (context, addProvider, child) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final message = addProvider.userMessage;
+            if (message != null && context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(message)));
+              addProvider.clearUserMessage();
+            }
+          });
+
           void onIncomeTap() {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -43,10 +53,7 @@ class AddScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppHeader(
-                  title: AppStrings.add,
-                  leading: null
-                ),
+                const AppHeader(title: AppStrings.add, leading: null),
                 const SizedBox(height: AppMeasurements.sectionGap),
                 Row(
                   children: [
@@ -75,31 +82,41 @@ class AddScreen extends StatelessWidget {
                 Text(AppStrings.lastAdded, style: AppTextStyles.sectionTitle),
                 const SizedBox(height: AppMeasurements.smallGap),
                 Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: recentEntries.length,
-                    itemBuilder: (context, index) {
-                      final entry = recentEntries[index];
-                      final category = addProvider.categoryById(
-                        entry.categoryId,
-                      );
-                      return AppTransactionTile(
-                        emoji: category.emoji,
-                        title: entry.title,
-                        subtitle: AppFormatters.transactionSubtitle(
-                          entry.dateTime,
+                  child: addProvider.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : recentEntries.isEmpty
+                      ? Center(
+                          child: Text(
+                            addProvider.emptyStateText,
+                            style: AppTextStyles.body,
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.zero,
+                          itemCount: recentEntries.length,
+                          itemBuilder: (context, index) {
+                            final entry = recentEntries[index];
+                            final category = addProvider.categoryById(
+                              entry.categoryId,
+                            );
+                            return AppTransactionTile(
+                              emoji: category.emoji,
+                              title: entry.title,
+                              subtitle: AppFormatters.transactionSubtitle(
+                                entry.dateTime,
+                              ),
+                              amount: AppFormatters.signedAmount(
+                                amount: entry.amount,
+                                tone: entry.tone,
+                              ),
+                              amountColor: AppFunctions.toneColor(entry.tone),
+                              emojiBackgroundColor:
+                                  AppFunctions.categorySoftColor(
+                                    category.colorKey,
+                                  ),
+                            );
+                          },
                         ),
-                        amount: AppFormatters.signedAmount(
-                          amount: entry.amount,
-                          tone: entry.tone,
-                        ),
-                        amountColor: AppFunctions.toneColor(entry.tone),
-                        emojiBackgroundColor: AppFunctions.categorySoftColor(
-                          category.colorKey,
-                        ),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),

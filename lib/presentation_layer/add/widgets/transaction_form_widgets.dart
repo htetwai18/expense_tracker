@@ -32,6 +32,12 @@ class TransactionFormScaffold extends StatelessWidget {
     required this.categoryEmojiController,
     required this.categoryNameController,
     required this.onAddCategory,
+    required this.isLoading,
+    this.titleErrorText,
+    this.amountErrorText,
+    this.categoryErrorText,
+    this.categoryEmojiErrorText,
+    this.categoryNameErrorText,
     super.key,
   });
 
@@ -53,6 +59,12 @@ class TransactionFormScaffold extends StatelessWidget {
   final TextEditingController categoryEmojiController;
   final TextEditingController categoryNameController;
   final Future<void> Function() onAddCategory;
+  final bool isLoading;
+  final String? titleErrorText;
+  final String? amountErrorText;
+  final String? categoryErrorText;
+  final String? categoryEmojiErrorText;
+  final String? categoryNameErrorText;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +87,8 @@ class TransactionFormScaffold extends StatelessWidget {
           emojiController: categoryEmojiController,
           nameController: categoryNameController,
           onSave: onAddCategory,
+          emojiErrorText: categoryEmojiErrorText,
+          nameErrorText: categoryNameErrorText,
         ),
       );
     }
@@ -108,6 +122,7 @@ class TransactionFormScaffold extends StatelessWidget {
               label: itemTitleLabel,
               hint: itemTitleHint,
               controller: titleController,
+              errorText: titleErrorText,
             ),
             const SizedBox(height: AppMeasurements.largeGap),
             LabeledInputBox(
@@ -117,9 +132,17 @@ class TransactionFormScaffold extends StatelessWidget {
               leadingText: AppStrings.dollarSign,
               trailingText: AppStrings.amountStepper,
               keyboardType: TextInputType.number,
+              errorText: amountErrorText,
             ),
             const SizedBox(height: AppMeasurements.largeGap),
             Text(AppStrings.category, style: AppTextStyles.fieldLabel),
+            if (categoryErrorText != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                categoryErrorText!,
+                style: AppTextStyles.caption.copyWith(color: AppColors.red),
+              ),
+            ],
             const SizedBox(height: AppMeasurements.smallGap),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -142,7 +165,10 @@ class TransactionFormScaffold extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppMeasurements.sectionGap),
-            AppGradientButton(label: submitLabel, onTap: onSubmitTap),
+            AppGradientButton(
+              label: isLoading ? AppStrings.save : submitLabel,
+              onTap: isLoading ? null : onSubmitTap,
+            ),
           ],
         ),
       ),
@@ -275,6 +301,7 @@ class LabeledInputBox extends StatelessWidget {
     this.leadingText,
     this.trailingText,
     this.keyboardType,
+    this.errorText,
     super.key,
   });
 
@@ -284,6 +311,7 @@ class LabeledInputBox extends StatelessWidget {
   final String? leadingText;
   final String? trailingText;
   final TextInputType? keyboardType;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -336,6 +364,13 @@ class LabeledInputBox extends StatelessWidget {
             ],
           ),
         ),
+        if (errorText != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            errorText!,
+            style: AppTextStyles.caption.copyWith(color: AppColors.red),
+          ),
+        ],
       ],
     );
   }

@@ -15,6 +15,16 @@ class AddIncomeScreen extends StatelessWidget {
       create: (context) => AddIncomeProvider(),
       child: Consumer<AddIncomeProvider>(
         builder: (context, provider, child) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final message = provider.userMessage;
+            if (message != null && context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(message)));
+              provider.clearUserMessage();
+            }
+          });
+
           Future<void> onSubmitTap() async {
             final isSaved = await provider.saveIncomeTransaction();
             if (isSaved && context.mounted) {
@@ -41,6 +51,12 @@ class AddIncomeScreen extends StatelessWidget {
             categoryEmojiController: provider.categoryEmojiController,
             categoryNameController: provider.categoryNameController,
             onAddCategory: provider.addCategory,
+            isLoading: provider.isLoading,
+            titleErrorText: provider.titleErrorText,
+            amountErrorText: provider.amountErrorText,
+            categoryErrorText: provider.categoryErrorText,
+            categoryEmojiErrorText: provider.categoryEmojiErrorText,
+            categoryNameErrorText: provider.categoryNameErrorText,
           );
         },
       ),

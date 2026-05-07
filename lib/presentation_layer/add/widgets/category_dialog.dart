@@ -11,12 +11,16 @@ class CategoryDialog extends StatelessWidget {
     required this.emojiController,
     required this.nameController,
     required this.onSave,
+    this.emojiErrorText,
+    this.nameErrorText,
     super.key,
   });
 
   final TextEditingController emojiController;
   final TextEditingController nameController;
   final Future<void> Function() onSave;
+  final String? emojiErrorText;
+  final String? nameErrorText;
 
   @override
   Widget build(BuildContext context) {
@@ -44,12 +48,14 @@ class CategoryDialog extends StatelessWidget {
               label: AppStrings.categoryEmoji,
               hint: AppStrings.emojiHint,
               controller: emojiController,
+              errorText: emojiErrorText,
             ),
             const SizedBox(height: AppMeasurements.gap),
             DialogTextField(
               label: AppStrings.categoryName,
               hint: AppStrings.categoryNameHint,
               controller: nameController,
+              errorText: nameErrorText,
             ),
             const SizedBox(height: AppMeasurements.largeGap),
             Row(
@@ -87,12 +93,14 @@ class DialogTextField extends StatelessWidget {
     required this.label,
     required this.hint,
     required this.controller,
+    this.errorText,
     super.key,
   });
 
   final String label;
   final String hint;
   final TextEditingController controller;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -119,6 +127,8 @@ class DialogTextField extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppMeasurements.inputRadius),
               borderSide: const BorderSide(color: AppColors.primary),
             ),
+            errorText: errorText,
+            errorStyle: AppTextStyles.caption.copyWith(color: AppColors.red),
           ),
         ),
       ],
