@@ -56,11 +56,19 @@ class AnimatedWalletHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.92, end: 1),
-      duration: const Duration(milliseconds: 900),
-      curve: Curves.easeOutBack,
-      builder: (context, scale, child) {
-        return Transform.scale(scale: scale, child: child);
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 1500),
+      curve: Curves.easeOutCubic,
+      builder: (context, animationValue, child) {
+        final scale = 0.82 + (animationValue * 0.18);
+        final verticalOffset = (1 - animationValue) * 28;
+        return Opacity(
+          opacity: animationValue,
+          child: Transform.translate(
+            offset: Offset(0, verticalOffset),
+            child: Transform.scale(scale: scale, child: child),
+          ),
+        );
       },
       child: Container(
         width: 220,

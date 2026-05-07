@@ -292,6 +292,9 @@ class AnimatedBarChart extends StatelessWidget {
                         expenseValue: expenseValues[index],
                         barWidth: barWidth,
                         barGap: barGap,
+                        animationDelayFraction: (index * 0.03)
+                            .clamp(0.0, 0.33)
+                            .toDouble(),
                         selected: selectedIndex == index,
                         onTap: () => onWeekTap(index),
                       );
@@ -325,6 +328,7 @@ class ChartWeekBars extends StatelessWidget {
     required this.expenseValue,
     required this.barWidth,
     required this.barGap,
+    required this.animationDelayFraction,
     required this.selected,
     required this.onTap,
     super.key,
@@ -334,6 +338,7 @@ class ChartWeekBars extends StatelessWidget {
   final double expenseValue;
   final double barWidth;
   final double barGap;
+  final double animationDelayFraction;
   final bool selected;
   final VoidCallback onTap;
 
@@ -344,24 +349,29 @@ class ChartWeekBars extends StatelessWidget {
       onTap: onTap,
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 850),
+        duration: const Duration(milliseconds: 1550),
         curve: Curves.easeOutCubic,
         builder: (context, animationValue, child) {
+          final delayedAnimationValue =
+              ((animationValue - animationDelayFraction) /
+                      (1 - animationDelayFraction))
+                  .clamp(0.0, 1.0)
+                  .toDouble();
           return AnimatedOpacity(
-            duration: const Duration(milliseconds: 180),
+            duration: const Duration(milliseconds: 340),
             opacity: selected ? 1 : 0.58,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 ChartBar(
-                  value: incomeValue * animationValue,
+                  value: incomeValue * delayedAnimationValue,
                   color: AppColors.primary,
                   width: barWidth,
                   selected: selected,
                 ),
                 SizedBox(width: barGap),
                 ChartBar(
-                  value: expenseValue * animationValue,
+                  value: expenseValue * delayedAnimationValue,
                   color: AppColors.orange,
                   width: barWidth,
                   selected: selected,
