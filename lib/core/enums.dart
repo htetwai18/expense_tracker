@@ -14,3 +14,5 @@ enum TransactionTone {
   @HiveField(1)
   expense,
 }
+
+enum OverviewChartPeriod { weekly, monthly, yearly }

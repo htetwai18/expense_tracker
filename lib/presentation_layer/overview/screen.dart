@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/colors.dart';
+import '../../core/enums.dart';
 import '../../core/formatters.dart';
 import '../../core/functions.dart';
 import '../../core/measurements.dart';
@@ -19,8 +20,7 @@ class OverviewScreen extends StatelessWidget {
       builder: (context, appProvider, child) {
         final summary = appProvider.balanceSummary;
         final chartWeeks = appProvider.chartWeeks;
-        final selectedWeek = appProvider.selectedChartWeek;
-        final transactions = appProvider.transactions;
+        final transactions = appProvider.filteredOverviewTransactions;
 
         return AppScreen(
           child: Column(
@@ -28,7 +28,6 @@ class OverviewScreen extends StatelessWidget {
             children: [
               const AppHeader(
                 title: AppStrings.overview,
-                leading: CircleTextButton(label: AppStrings.menuEmoji),
               ),
               const SizedBox(height: AppMeasurements.largeGap),
               Row(
@@ -66,29 +65,17 @@ class OverviewScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        AppStrings.aprDateRange,
+                        appProvider.selectedChartDateRangeLabel,
                         style: AppTextStyles.caption,
                       ),
                     ],
                   ),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(
-                        AppMeasurements.smallRadius,
-                      ),
-                    ),
-                    child: Text(
-                      '${AppStrings.monthly} ${AppStrings.down}',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+                  ChartPeriodDropdown(
+                    selectedLabel: appProvider.selectedChartPeriodLabel,
+                    selectedPeriod: appProvider.selectedChartPeriod,
+                    onChanged: appProvider.selectChartPeriod,
+                    labelForPeriod: appProvider.chartPeriodLabel,
                   ),
                 ],
               ),
@@ -105,47 +92,100 @@ class OverviewScreen extends StatelessWidget {
                 onWeekTap: appProvider.selectChartWeek,
               ),
               const SizedBox(height: AppMeasurements.smallGap),
-              SelectedWeekSummary(
-                label: selectedWeek.label,
-                incomeAmount: AppFormatters.currency(selectedWeek.incomeAmount),
-                expenseAmount: AppFormatters.currency(
-                  selectedWeek.expenseAmount,
-                ),
-              ),
               const SizedBox(height: AppMeasurements.gap),
-              const ChartLegendToggle(),
+              ChartLegendToggle(
+                selectedTone: appProvider.selectedOverviewTone,
+                onIncomeTap: () {
+                  appProvider.selectOverviewTone(TransactionTone.income);
+                },
+                onExpenseTap: () {
+                  appProvider.selectOverviewTone(TransactionTone.expense);
+                },
+              ),
               const SizedBox(height: AppMeasurements.smallGap),
               Expanded(
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: transactions.length,
-                  itemBuilder: (context, index) {
-                    final transaction = transactions[index];
-                    final category = appProvider.categoryById(
-                      transaction.categoryId,
-                    );
-                    return AppTransactionTile(
-                      emoji: category.emoji,
-                      title: transaction.title,
-                      subtitle: AppFormatters.transactionSubtitle(
-                        transaction.dateTime,
+                child: transactions.isEmpty
+                    ? Center(
+                        child: Text(
+                          AppStrings.noRecentTransactions,
+                          style: AppTextStyles.body,
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: transactions.length,
+                        itemBuilder: (context, index) {
+                          final transaction = transactions[index];
+                          final category = appProvider.categoryById(
+                            transaction.categoryId,
+                          );
+                          return AppTransactionTile(
+                            emoji: category.emoji,
+                            title: transaction.title,
+                            subtitle: AppFormatters.transactionSubtitle(
+                              transaction.dateTime,
+                            ),
+                            amount: AppFormatters.signedAmount(
+                              amount: transaction.amount,
+                              tone: transaction.tone,
+                            ),
+                            amountColor: AppFunctions.toneColor(
+                              transaction.tone,
+                            ),
+                            emojiBackgroundColor:
+                                AppFunctions.categorySoftColor(
+                                  category.colorKey,
+                                ),
+                          );
+                        },
                       ),
-                      amount: AppFormatters.signedAmount(
-                        amount: transaction.amount,
-                        tone: transaction.tone,
-                      ),
-                      amountColor: AppFunctions.toneColor(transaction.tone),
-                      emojiBackgroundColor: AppFunctions.categorySoftColor(
-                        category.colorKey,
-                      ),
-                    );
-                  },
-                ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class ChartPeriodDropdown extends StatelessWidget {
+  const ChartPeriodDropdown({
+    required this.selectedLabel,
+    required this.selectedPeriod,
+    required this.onChanged,
+    required this.labelForPeriod,
+    super.key,
+  });
+
+  final String selectedLabel;
+  final OverviewChartPeriod selectedPeriod;
+  final ValueChanged<OverviewChartPeriod> onChanged;
+  final String Function(OverviewChartPeriod period) labelForPeriod;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<OverviewChartPeriod>(
+      initialValue: selectedPeriod,
+      onSelected: onChanged,
+      itemBuilder: (context) {
+        return OverviewChartPeriod.values.map((period) {
+          return PopupMenuItem(
+            value: period,
+            child: Text(labelForPeriod(period)),
+          );
+        }).toList();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppMeasurements.smallRadius),
+        ),
+        child: Text(
+          '$selectedLabel ${AppStrings.down}',
+          style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary),
+        ),
+      ),
     );
   }
 }
@@ -225,6 +265,10 @@ class AnimatedBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = incomeValues.length > 7;
+    final barWidth = isCompact ? 6.0 : AppMeasurements.chartBarWidth;
+    final barGap = isCompact ? 3.0 : 8.0;
+
     return SizedBox(
       height: AppMeasurements.chartHeight,
       child: Row(
@@ -248,6 +292,8 @@ class AnimatedBarChart extends StatelessWidget {
                       return ChartWeekBars(
                         incomeValue: incomeValues[index],
                         expenseValue: expenseValues[index],
+                        barWidth: barWidth,
+                        barGap: barGap,
                         selected: selectedIndex == index,
                         onTap: () => onWeekTap(index),
                       );
@@ -257,9 +303,14 @@ class AnimatedBarChart extends StatelessWidget {
                 const SizedBox(height: AppMeasurements.compactGap),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: labels
-                      .map((label) => Text(label, style: AppTextStyles.caption))
-                      .toList(),
+                  children: labels.map((label) {
+                    return Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(label, style: AppTextStyles.caption),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
@@ -274,6 +325,8 @@ class ChartWeekBars extends StatelessWidget {
   const ChartWeekBars({
     required this.incomeValue,
     required this.expenseValue,
+    required this.barWidth,
+    required this.barGap,
     required this.selected,
     required this.onTap,
     super.key,
@@ -281,6 +334,8 @@ class ChartWeekBars extends StatelessWidget {
 
   final double incomeValue;
   final double expenseValue;
+  final double barWidth;
+  final double barGap;
   final bool selected;
   final VoidCallback onTap;
 
@@ -303,12 +358,14 @@ class ChartWeekBars extends StatelessWidget {
                 ChartBar(
                   value: incomeValue * animationValue,
                   color: AppColors.primary,
+                  width: barWidth,
                   selected: selected,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: barGap),
                 ChartBar(
                   value: expenseValue * animationValue,
                   color: AppColors.orange,
+                  width: barWidth,
                   selected: selected,
                 ),
               ],
@@ -324,12 +381,14 @@ class ChartBar extends StatelessWidget {
   const ChartBar({
     required this.value,
     required this.color,
+    required this.width,
     required this.selected,
     super.key,
   });
 
   final double value;
   final Color color;
+  final double width;
   final bool selected;
 
   @override
@@ -338,7 +397,7 @@ class ChartBar extends StatelessWidget {
       heightFactor: value,
       alignment: Alignment.bottomCenter,
       child: Container(
-        width: AppMeasurements.chartBarWidth,
+        width: width,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(AppMeasurements.chartBarWidth),
@@ -398,10 +457,22 @@ class SelectedWeekSummary extends StatelessWidget {
 }
 
 class ChartLegendToggle extends StatelessWidget {
-  const ChartLegendToggle({super.key});
+  const ChartLegendToggle({
+    required this.selectedTone,
+    required this.onIncomeTap,
+    required this.onExpenseTap,
+    super.key,
+  });
+
+  final TransactionTone selectedTone;
+  final VoidCallback onIncomeTap;
+  final VoidCallback onExpenseTap;
 
   @override
   Widget build(BuildContext context) {
+    final isIncomeSelected = selectedTone == TransactionTone.income;
+    final isExpenseSelected = selectedTone == TransactionTone.expense;
+
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
@@ -409,19 +480,29 @@ class ChartLegendToggle extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppMeasurements.smallRadius),
       ),
       child: Row(
-        children: const [
+        children: [
           Expanded(
             child: LegendPill(
               label: AppStrings.income,
-              textColor: AppColors.textPrimary,
-              backgroundColor: AppColors.surface,
+              textColor: isIncomeSelected
+                  ? Colors.white
+                  : AppColors.textPrimary,
+              backgroundColor: isIncomeSelected
+                  ? AppColors.primary
+                  : AppColors.surface,
+              onTap: onIncomeTap,
             ),
           ),
           Expanded(
             child: LegendPill(
               label: AppStrings.expenses,
-              textColor: Colors.white,
-              backgroundColor: AppColors.orange,
+              textColor: isExpenseSelected
+                  ? Colors.white
+                  : AppColors.textPrimary,
+              backgroundColor: isExpenseSelected
+                  ? AppColors.orange
+                  : AppColors.surface,
+              onTap: onExpenseTap,
             ),
           ),
         ],
@@ -435,27 +516,33 @@ class LegendPill extends StatelessWidget {
     required this.label,
     required this.textColor,
     required this.backgroundColor,
+    required this.onTap,
     super.key,
   });
 
   final String label;
   final Color textColor;
   final Color backgroundColor;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppMeasurements.smallRadius),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        style: AppTextStyles.body.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w700,
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppMeasurements.smallRadius),
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(AppMeasurements.smallRadius),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: AppTextStyles.body.copyWith(
+            color: textColor,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );

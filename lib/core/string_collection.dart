@@ -19,7 +19,9 @@ abstract final class AppStrings {
   static const String totalIncome = 'Total Income';
   static const String totalExpenses = 'Total Expenses';
   static const String statistics = 'Statistics';
+  static const String weekly = 'Weekly';
   static const String monthly = 'Monthly';
+  static const String yearly = 'Yearly';
   static const String lastAdded = 'Last Added';
   static const String incomeTitle = 'Income Title';
   static const String expenseTitle = 'Expense Title';
@@ -126,6 +128,20 @@ abstract final class AppStrings {
     'Week 2',
     'Week 3',
     'Week 4',
+  ];
+  static const List<String> chartMonths = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   static const List<String> chartYAxis = [
     r'$4k',

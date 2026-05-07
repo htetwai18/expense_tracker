@@ -23,11 +23,7 @@ class HomeScreen extends StatelessWidget {
         return AppScreen(
           child: Column(
             children: [
-              const AppHeader(
-                title: AppStrings.home,
-                leading: CircleTextButton(label: AppStrings.menuEmoji),
-                trailing: CircleTextButton(label: AppStrings.bellEmoji),
-              ),
+              const AppHeader(title: AppStrings.home),
               const SizedBox(height: AppMeasurements.largeGap),
               BalanceCard(
                 totalBalance: AppFormatters.amount(summary.totalBalance),
@@ -35,10 +31,7 @@ class HomeScreen extends StatelessWidget {
                 expenseAmount: AppFormatters.amount(summary.expenseTotal),
               ),
               const SizedBox(height: AppMeasurements.largeGap),
-              const SectionTitle(
-                title: AppStrings.transactions,
-                actionLabel: AppStrings.seeAll,
-              ),
+              const SectionTitle(title: AppStrings.transactions),
               Expanded(
                 child: ListView.builder(
                   padding: EdgeInsets.zero,
@@ -106,15 +99,11 @@ class BalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
-                '${AppStrings.totalBalance} ${AppStrings.down}',
+                AppStrings.totalBalance,
                 style: AppTextStyles.body.copyWith(color: Colors.white70),
-              ),
-              const Spacer(),
-              Text(
-                AppStrings.more,
-                style: AppTextStyles.body.copyWith(color: Colors.white),
               ),
             ],
           ),
