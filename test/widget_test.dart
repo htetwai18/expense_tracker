@@ -1,30 +1,34 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:expense_tracker/core/enums.dart';
+import 'package:expense_tracker/core/formatters.dart';
+import 'package:expense_tracker/presentation_layer/add/widgets/transaction_form_widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:expense_tracker/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('formats signed transaction amounts by tone', () {
+    expect(
+      AppFormatters.signedAmount(amount: 1250, tone: TransactionTone.income),
+      '+\$1,250',
+    );
+    expect(
+      AppFormatters.signedAmount(amount: 1250, tone: TransactionTone.expense),
+      '-\$1,250',
+    );
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  test('decimal amount input accepts one decimal point only', () {
+    final formatter = DecimalAmountInputFormatter();
+    const oldValue = TextEditingValue(text: '12.5');
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    final acceptedValue = formatter.formatEditUpdate(
+      oldValue,
+      const TextEditingValue(text: '12.50'),
+    );
+    expect(acceptedValue.text, '12.50');
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    final rejectedValue = formatter.formatEditUpdate(
+      oldValue,
+      const TextEditingValue(text: '12.5.0'),
+    );
+    expect(rejectedValue.text, oldValue.text);
   });
 }
